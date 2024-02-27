@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video Streaming Platform</title>
+</head>
+<body>
+  <h1>Welcome to our video streaming platform</h1>
+  <video id="myVideo" controls width="300" height="250"></video>
+
+  <script>
+    // Function to fetch and process video segments
+    function fetchVideoChunk(start, end) {
+      // Replace with your server address
+      const baseUrl = "http://localhost:8080/stream";
+
+      fetch(`${baseUrl}?start=${start}&end=${end}`)
+        .then(response => response.blob())
+        .then(blob => {
+          // Create a new Blob URL for the received chunk
+          const url = URL.createObjectURL(blob);
+
+          // Add the source to the video element with the chunk URL
+          const source = document.createElement("source");
+          source.src = url;
+          source.type = "video/mp4";
+          document.getElementById("myVideo").appendChild(source);
+
+          // Free the memory used by the Blob URL when no longer needed
+          source.onloadedmetadata = () => {
+            URL.revokeObjectURL(url);
+          };
+        })
+        .catch(error => console.error(error));
+    }
+
+    // Function to initiate video playback with chunked requests
+    function startStreaming() {
+      const video = document.getElementById("myVideo");
+
+      // Replace with your actual video size
+      const videoSize = 1000000; // Adjust based on your video size
+
+      let currentPosition = 0;
+      const chunkSize = 100000; // Adjust chunk size based on your needs
+
+      // Recursively fetch and append chunks until the entire video is streamed
+      function fetchNextChunk() {
+        const nextEnd = Math.min(currentPosition + chunkSize, videoSize);
+        fetchVideoChunk(currentPosition, nextEnd);
+        currentPosition = nextEnd;
+
+        if (currentPosition < videoSize) {
+          setTimeout(fetchNextChunk, 1000); // Adjust delay as needed
+        } else {
+          video.play(); // Start playback once all chunks are loaded
+        }
+      }
+
+      fetchNextChunk();
+    }
+
+    // Call the startStreaming function to initiate video loading
+    startStreaming();
+  </script>
+</body>
+</html>
